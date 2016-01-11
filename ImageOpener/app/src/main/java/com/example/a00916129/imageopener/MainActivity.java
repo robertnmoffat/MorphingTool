@@ -45,11 +45,12 @@ public class MainActivity extends AppCompatActivity {
             imageView.setImageBitmap(BitmapFactory.decodeFile(rightImagePath));
         }
 
+        //Play button at bottom
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Todo: Generate and display morph frames.", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
