@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private static TextView framesTextView;
     private static Bitmap leftBitmap=null, rightBitmap=null;
     private static Bitmap[] warpFrames;
+    private Drawer drawer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +65,8 @@ public class MainActivity extends AppCompatActivity {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                frameAmount = progress+1;
-                framesTextView.setText("Frames:"+frameAmount);
+                frameAmount = progress + 1;
+                framesTextView.setText("Frames:" + frameAmount);
             }
 
             @Override
@@ -78,6 +79,9 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        //drawer = new Drawer(this);
+        //setContentView(drawer);
     }
 
     @Override
@@ -96,7 +100,8 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent = new Intent(this, Drawer.class);
+            startActivity(intent);
         }
         if (id == R.id.action_load_left){
             Intent i = new Intent(
@@ -129,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
 
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             leftImagePath = cursor.getString(columnIndex);
+            System.out.println(leftImagePath);
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView1);
@@ -155,4 +161,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+
+
+
 }
