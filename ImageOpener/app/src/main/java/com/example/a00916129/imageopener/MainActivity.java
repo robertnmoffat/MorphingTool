@@ -1,9 +1,19 @@
 package com.example.a00916129.imageopener;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BlurMaskFilter;
+import android.graphics.Canvas;
+import android.graphics.EmbossMaskFilter;
+import android.graphics.MaskFilter;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -11,6 +21,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,7 +30,7 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
     private static int RESULT_LOAD_LEFT_IMAGE = 1;
     private static int RESULT_LOAD_RIGHT_IMAGE = 2;
@@ -30,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
     private static Bitmap leftBitmap=null, rightBitmap=null;
     private static Bitmap[] warpFrames;
     private Drawer drawer;
+
+    private MyView leftView=null, rightView=null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +56,16 @@ public class MainActivity extends AppCompatActivity {
         framesTextView = (TextView) findViewById(R.id.framesTextView);
 
         if(leftImagePath!=null){
-            ImageView imageView = (ImageView) findViewById(R.id.imageView1);
-            imageView.setImageBitmap(BitmapFactory.decodeFile(leftImagePath));
+            MyView leftView = (MyView) findViewById(R.id.imageView1);
+            leftView.setDrawable(true);
+            leftView.setChild(rightView);
+            leftView.setImageBitmap(BitmapFactory.decodeFile(leftImagePath));
         }
         if(rightImagePath!=null){
-            ImageView imageView = (ImageView) findViewById(R.id.imageView2);
-            imageView.setImageBitmap(BitmapFactory.decodeFile(rightImagePath));
+            MyView rightView = (MyView) findViewById(R.id.imageView2);
+            rightView.setDrawable(false);
+            leftView.setChild(rightView);
+            rightView.setImageBitmap(BitmapFactory.decodeFile(rightImagePath));
         }
 
         //Play button at bottom
@@ -61,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -79,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+
+
 
         //drawer = new Drawer(this);
         //setContentView(drawer);
@@ -161,6 +183,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+
+
+
+
+
 
 
 

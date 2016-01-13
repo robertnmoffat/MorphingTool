@@ -23,6 +23,7 @@
             android:id="@+id/imageView1"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true" />
+
     </LinearLayout>
 
     <LinearLayout

@@ -23,7 +23,7 @@
 
 
 
-    <ImageView
+    <com.example.a00916129.imageopener.MyView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:id="@+id/imageView1"
@@ -33,7 +33,7 @@
         android:layout_marginTop="0dp"
         android:layout_weight="1"/>
 
-    <ImageView
+    <com.example.a00916129.imageopener.MyView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:id="@+id/imageView2"
@@ -52,7 +52,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Frames:"
+        android:text="Frames:1"
         android:id="@+id/framesTextView" />
 
     <SeekBar
