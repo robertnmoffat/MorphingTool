@@ -2,6 +2,7 @@ package com.example.a00916129.imageopener;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -22,9 +24,11 @@ public class MainActivity extends AppCompatActivity {
     private static int RESULT_LOAD_LEFT_IMAGE = 1;
     private static int RESULT_LOAD_RIGHT_IMAGE = 2;
     private static String leftImagePath, rightImagePath;
-    private static int frameAmount;
+    private static int frameAmount=1;
     private static SeekBar seekBar;
     private static TextView framesTextView;
+    private static Bitmap leftBitmap=null, rightBitmap=null;
+    private static Bitmap[] warpFrames;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,15 +54,17 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Todo: Generate and display morph frames.", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
+                intent.putExtra("LeftImageFilename", leftImagePath);
+                intent.putExtra("RightImageFilename", rightImagePath);
+                startActivity(intent);
             }
         });
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                frameAmount = progress;
+                frameAmount = progress+1;
                 framesTextView.setText("Frames:"+frameAmount);
             }
 
@@ -123,11 +129,11 @@ public class MainActivity extends AppCompatActivity {
 
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             leftImagePath = cursor.getString(columnIndex);
-            System.out.println(leftImagePath);
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView1);
-            imageView.setImageBitmap(BitmapFactory.decodeFile(leftImagePath));
+            leftBitmap = BitmapFactory.decodeFile(leftImagePath);
+            imageView.setImageBitmap(leftBitmap);
         }
 
         if (requestCode == RESULT_LOAD_RIGHT_IMAGE && resultCode == RESULT_OK && null != data) {
@@ -144,7 +150,8 @@ public class MainActivity extends AppCompatActivity {
             cursor.close();
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView2);
-            imageView.setImageBitmap(BitmapFactory.decodeFile(rightImagePath));
+            rightBitmap = BitmapFactory.decodeFile(rightImagePath);
+            imageView.setImageBitmap(rightBitmap);
         }
 
     }
