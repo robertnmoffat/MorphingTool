@@ -24,7 +24,7 @@ public class MyView extends ImageView {
     private static final float MINP = 0.25f;
     private static final float MAXP = 0.75f;
 
-    private ArrayList<SelectionLine> lines = new ArrayList<SelectionLine>();
+    private static ArrayList<SelectionLine> lines = new ArrayList<SelectionLine>();
     private SelectionLine currentLine;
 
     private Bitmap mBitmap;
@@ -38,6 +38,8 @@ public class MyView extends ImageView {
 
     private MyView child=null;
     private boolean drawable=true;
+    private SelectionLine dragLine=null;
+    private boolean draggingHead=false, draggingTail=false;
 
     private String imagePath="/storage/emulated/0/DCIM/Camera/IMG_20160109_205304.jpg";
 
@@ -88,10 +90,7 @@ public class MyView extends ImageView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        //mBitmap = Bitmap.createBitmap(w/3, h/3, Bitmap.Config.ARGB_8888);
-        //Bitmap tempBitmap = BitmapFactory.decodeFile(imagePath);
         Bitmap tempBitmap = ((BitmapDrawable)getDrawable()).getBitmap();
-        //double ratioHeight = tempBitmap.getHeight()/tempBitmap.getWidth()*getHeight();
         tempBitmap = Bitmap.createScaledBitmap(tempBitmap, getWidth(), getHeight(), false);
         mBitmap  = tempBitmap.copy(Bitmap.Config.ARGB_8888, true);
         mCanvas = new Canvas(mBitmap);
@@ -111,6 +110,24 @@ public class MyView extends ImageView {
 
     private void touch_start(float x, float y) {
         if(drawable) {
+            for (int i=0; i<lines.size(); i++) {
+                SelectionLine curLine = lines.get(i);
+                if(x>curLine.getX1()-20&&x<curLine.getX1()+20
+                        &&y>curLine.getY1()-20&&y<curLine.getY1()+20){
+                    draggingTail=true;
+                    dragLine = curLine;
+                    lines.remove(i);
+                    return;
+                }
+                if(x>curLine.getX2()-20&&x<curLine.getX2()+20
+                        &&y>curLine.getY2()-20&&y<curLine.getY2()+20){
+                    draggingHead=true;
+                    dragLine = curLine;
+                    lines.remove(i);
+                    return;
+                }
+            }
+
             currentLine = new SelectionLine();
             currentLine.setX1((int) x);
             currentLine.setY1((int) y);
@@ -119,7 +136,9 @@ public class MyView extends ImageView {
             mPath.moveTo(x, y);
             mX = x;
             mY = y;
-            mCanvas.drawCircle(x, y, 20, mPaint);
+
+            System.out.println("Touch start");
+
         }
     }
     private void touch_move(float x, float y) {
@@ -130,10 +149,41 @@ public class MyView extends ImageView {
                 //mPath.quadTo(mX, mY, (x + mX)/2, (y + mY)/2);
                 mX = x;
                 mY = y;
+
+                drawLines();
+
+                mPath.moveTo(currentLine.getX1(), currentLine.getY1());
+
+                mCanvas.drawCircle(currentLine.getX1(), currentLine.getY1(), 20, mPaint);
+
+                mPath.lineTo(mX, mY);
+                // commit the path to our offscreen
+                mCanvas.drawPath(mPath, mPaint);//draw line at current figure position
+                mCanvas.drawCircle(mX, mY, 20, mPaint);
+
+                mPath.reset();//clear the line because this isnt necessarily the final position
+
+
             }
         }
     }
     private void touch_up() {
+        if(draggingTail){
+            dragLine.setX1((int) mX);
+            dragLine.setY1((int) mY);
+            lines.add(dragLine);
+            dragLine=null;
+            drawLines();
+            return;
+        }
+        if(draggingHead){
+            dragLine.setX2((int) mX);
+            dragLine.setY2((int) mY);
+            lines.add(dragLine);
+            dragLine=null;
+            drawLines();
+            return;
+        }
         if(drawable) {
             mPath.lineTo(mX, mY);
             // commit the path to our offscreen
@@ -146,18 +196,13 @@ public class MyView extends ImageView {
 
             lines.add(currentLine);
 
-            for (SelectionLine curLine : lines) {
-                addLine(curLine);
-
-                if (child != null) {
-                    child.addLine(curLine);
-                    child.postInvalidate();
-                }
-            }
+            drawLines();
 
             mPath.reset();
         }
     }
+
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -181,6 +226,23 @@ public class MyView extends ImageView {
         return true;
     }
 
+    public void drawLines(){
+        Bitmap tempBitmap = ((BitmapDrawable)getDrawable()).getBitmap();
+        tempBitmap = Bitmap.createScaledBitmap(tempBitmap, getWidth(), getHeight(), false);
+        mBitmap  = tempBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        mCanvas = new Canvas(mBitmap);
+
+        for (SelectionLine curLine : lines) {
+            addLine(curLine);
+
+            if (child != null) {
+                child.addLine(curLine);
+                child.postInvalidate();
+            }
+        }
+        postInvalidate();
+    }
+
     public void addLine(SelectionLine line){
         mPath.reset();
         mPath.moveTo(line.getX1(), line.getY1());
@@ -190,7 +252,6 @@ public class MyView extends ImageView {
         mCanvas.drawPath(mPath, mPaint);
         mCanvas.drawCircle(line.getX2(), line.getY2(), 20, mPaint);
         mPath.reset();
-        invalidate();
     }
 
     public MyView getChild() {

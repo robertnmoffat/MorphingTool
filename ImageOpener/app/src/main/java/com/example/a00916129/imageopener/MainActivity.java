@@ -55,18 +55,18 @@ public class MainActivity extends AppCompatActivity{
         seekBar = (SeekBar) findViewById(R.id.seekBar1);
         framesTextView = (TextView) findViewById(R.id.framesTextView);
 
+        leftView = (MyView) findViewById(R.id.imageView1);
+        rightView = (MyView) findViewById(R.id.imageView2);
+
         if(leftImagePath!=null){
-            MyView leftView = (MyView) findViewById(R.id.imageView1);
-            leftView.setDrawable(true);
-            leftView.setChild(rightView);
             leftView.setImageBitmap(BitmapFactory.decodeFile(leftImagePath));
         }
         if(rightImagePath!=null){
-            MyView rightView = (MyView) findViewById(R.id.imageView2);
-            rightView.setDrawable(false);
-            leftView.setChild(rightView);
             rightView.setImageBitmap(BitmapFactory.decodeFile(rightImagePath));
         }
+
+        rightView.invalidate();
+        leftView.invalidate();
 
         //Play button at bottom
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -105,6 +105,16 @@ public class MainActivity extends AppCompatActivity{
         //drawer = new Drawer(this);
         //setContentView(drawer);
     }
+
+    public void onStart(){
+        super.onStart();
+        leftView.setDrawable(true);
+        leftView.setChild(rightView);
+        rightView.setDrawable(false);
+        leftView.setImagePath(leftImagePath);
+        rightView.setImagePath(rightImagePath);
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
