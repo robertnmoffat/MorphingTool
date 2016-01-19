@@ -26,6 +26,10 @@ public class MyView extends ImageView {
 
     private static ArrayList<SelectionLine> lines = new ArrayList<SelectionLine>();
     private SelectionLine currentLine;
+    private static SelectionLine selectedLineLeft;
+    private static SelectionLine selectedLineright;
+
+    private final int TOUCH_SENSITIVITY = 30;
 
     private Bitmap mBitmap;
     private Canvas mCanvas;
@@ -96,6 +100,10 @@ public class MyView extends ImageView {
         mCanvas = new Canvas(mBitmap);
     }
 
+    public Bitmap getBitmap(){
+        return mBitmap;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(0xFFAAAAAA);
@@ -109,31 +117,53 @@ public class MyView extends ImageView {
     private static final float TOUCH_TOLERANCE = 4;
 
     private void touch_start(float x, float y) {
-        if(drawable) {
+
+
             for (int i=0; i<lines.size(); i++) {
                 SelectionLine curLine = lines.get(i);
-                if(x>curLine.getX1()-20&&x<curLine.getX1()+20
-                        &&y>curLine.getY1()-20&&y<curLine.getY1()+20){
+                if((!drawable&&curLine.isLeftLine())||drawable&&!curLine.isLeftLine())continue;
+                if(x>curLine.getX1()-TOUCH_SENSITIVITY&&x<curLine.getX1()+TOUCH_SENSITIVITY
+                        &&y>curLine.getY1()-TOUCH_SENSITIVITY&&y<curLine.getY1()+TOUCH_SENSITIVITY){
                     draggingTail=true;
                     dragLine = curLine;
-                    lines.remove(i);
+                    if(dragLine.isLeftLine()){
+                        selectedLineLeft=dragLine;
+                        selectedLineright=dragLine.getTwinLine();
+                    }else{
+                        selectedLineright=dragLine;
+                        selectedLineLeft=dragLine.getTwinLine();
+                    }
+                    currentLine=dragLine;
+                    //lines.remove(i);
                     return;
                 }
-                if(x>curLine.getX2()-20&&x<curLine.getX2()+20
-                        &&y>curLine.getY2()-20&&y<curLine.getY2()+20){
+                if(x>curLine.getX2()-TOUCH_SENSITIVITY&&x<curLine.getX2()+TOUCH_SENSITIVITY
+                        &&y>curLine.getY2()-TOUCH_SENSITIVITY&&y<curLine.getY2()+TOUCH_SENSITIVITY){
                     draggingHead=true;
                     dragLine = curLine;
-                    lines.remove(i);
+                    if(dragLine.isLeftLine()){
+                        selectedLineLeft=dragLine;
+                        selectedLineright=dragLine.getTwinLine();
+                    }else{
+                        selectedLineright=dragLine;
+                        selectedLineLeft=dragLine.getTwinLine();
+                    }
+                    currentLine=dragLine;
+                    //lines.remove(i);
                     return;
                 }
             }
 
+        if(drawable) {
             currentLine = new SelectionLine();
             currentLine.setX1((int) x);
             currentLine.setY1((int) y);
+            currentLine.setLeftLine(true);
+            selectedLineLeft=currentLine;
 
             mPath.reset();
             mPath.moveTo(x, y);
+
             mX = x;
             mY = y;
 
@@ -142,7 +172,8 @@ public class MyView extends ImageView {
         }
     }
     private void touch_move(float x, float y) {
-        if(drawable) {
+        //if(drawable||draggingHead||draggingTail) {
+        //if(drawable){
             float dx = Math.abs(x - mX);
             float dy = Math.abs(y - mY);
             if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
@@ -150,38 +181,49 @@ public class MyView extends ImageView {
                 mX = x;
                 mY = y;
 
+                int startX=0;
+                int startY=0;
+
                 drawLines();
 
-                mPath.moveTo(currentLine.getX1(), currentLine.getY1());
-
+                if(draggingHead){
+                    startX = dragLine.getX1();
+                    startY = dragLine.getY1();
+                }else if(draggingTail){;
+                    startX = dragLine.getX2();
+                    startY = dragLine.getY2();
+                }else {
+                    startX = currentLine.getX1();
+                    startY = currentLine.getY1();
+                }
+                mPath.moveTo(startX, startY);
                 mCanvas.drawCircle(currentLine.getX1(), currentLine.getY1(), 20, mPaint);
-
                 mPath.lineTo(mX, mY);
-                // commit the path to our offscreen
                 mCanvas.drawPath(mPath, mPaint);//draw line at current figure position
                 mCanvas.drawCircle(mX, mY, 20, mPaint);
-
                 mPath.reset();//clear the line because this isnt necessarily the final position
 
 
             }
-        }
+        //}
     }
     private void touch_up() {
         if(draggingTail){
             dragLine.setX1((int) mX);
             dragLine.setY1((int) mY);
-            lines.add(dragLine);
-            dragLine=null;
+            //lines.add(dragLine);
+            //dragLine=null;
             drawLines();
+            draggingTail=false;
             return;
         }
         if(draggingHead){
             dragLine.setX2((int) mX);
             dragLine.setY2((int) mY);
-            lines.add(dragLine);
-            dragLine=null;
+            //lines.add(dragLine);
+            //dragLine=null;
             drawLines();
+            draggingHead=false;
             return;
         }
         if(drawable) {
@@ -194,7 +236,13 @@ public class MyView extends ImageView {
             currentLine.setX2((int) mX);
             currentLine.setY2((int) mY);
 
+            SelectionLine tempLine = new SelectionLine(currentLine);
+            tempLine.setLeftLine(false);
+            selectedLineright=tempLine;
+            currentLine.setTwinLine(tempLine);
+            tempLine.setTwinLine(currentLine);
             lines.add(currentLine);
+            lines.add(tempLine);
 
             drawLines();
 
@@ -233,17 +281,28 @@ public class MyView extends ImageView {
         mCanvas = new Canvas(mBitmap);
 
         for (SelectionLine curLine : lines) {
-            addLine(curLine);
+            if(curLine.isLeftLine()&&child!=null) {
+                addLine(curLine);
+            }
 
-            if (child != null) {
+            if (child != null&&!curLine.isLeftLine()) {
                 child.addLine(curLine);
                 child.postInvalidate();
+            }
+
+            if(child==null&&!curLine.isLeftLine()){
+                addLine(curLine);
             }
         }
         postInvalidate();
     }
 
     public void addLine(SelectionLine line){
+        if(line==selectedLineLeft||line==selectedLineright){
+            mPaint.setColor(0xF000FFFF);
+        }else{
+            mPaint.setColor(0xFFFF0000);
+        }
         mPath.reset();
         mPath.moveTo(line.getX1(), line.getY1());
         mCanvas.drawCircle(line.getX1(), line.getY1(), 20, mPaint);
@@ -268,5 +327,9 @@ public class MyView extends ImageView {
 
     public void setDrawable(boolean drawable) {
         this.drawable = drawable;
+    }
+
+    public ArrayList<SelectionLine> getLines(){
+        return lines;
     }
 }

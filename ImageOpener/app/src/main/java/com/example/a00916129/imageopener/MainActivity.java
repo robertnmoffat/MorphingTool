@@ -44,6 +44,8 @@ public class MainActivity extends AppCompatActivity{
 
     private MyView leftView=null, rightView=null;
 
+    private FrameGenerator frameGenerator = new FrameGenerator();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +75,8 @@ public class MainActivity extends AppCompatActivity{
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                frameGenerator.saveFrame(leftView.getBitmap());
+                frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), 1);
                 Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
                 intent.putExtra("LeftImageFilename", leftImagePath);
                 intent.putExtra("RightImageFilename", rightImagePath);
