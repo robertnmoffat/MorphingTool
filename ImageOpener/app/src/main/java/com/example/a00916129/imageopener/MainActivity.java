@@ -75,11 +75,13 @@ public class MainActivity extends AppCompatActivity{
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                frameGenerator.saveFrame(leftView.getBitmap());
+                //frameGenerator.saveFrame(leftView.getBitmap());
+                frameGenerator.loadBitmap();
+                String path = frameGenerator.saveFrame(leftView.getBitmap(), getApplicationContext());
+                System.out.println("PATH:"+path);
                 frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), 1);
                 Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
-                intent.putExtra("LeftImageFilename", leftImagePath);
-                intent.putExtra("RightImageFilename", rightImagePath);
+                //intent.putExtra("FrameGenerator", frameAmount);
                 startActivity(intent);
             }
         });

@@ -23,11 +23,13 @@ public class FrameViewActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         Intent intent = getIntent();
-        leftImagePath = intent.getExtras().getString("LeftImageFilename");
+        //FrameGenerator frameGenerator = (FrameGenerator)getIntent().getSerializableExtra("FrameGenerator");
+        //Bitmap image = frameGenerator.getFrame(0);
+
 
         ImageView imageView = (ImageView) findViewById(R.id.imageView1);
-        Bitmap leftBitmap = BitmapFactory.decodeFile(leftImagePath);
-        imageView.setImageBitmap(leftBitmap);
+        //Bitmap leftBitmap = BitmapFactory.decodeFile(leftImagePath);
+        //imageView.setImageBitmap(image);
 
     }
 
