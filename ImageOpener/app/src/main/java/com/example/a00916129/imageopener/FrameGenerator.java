@@ -36,6 +36,7 @@ public class FrameGenerator{
         Point pqV,nV,xpV,pxV;
 
         int outOfBoundCount = 0;
+        int timesRun=0;
 
         //Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imagenes_originales[a]);
         Bitmap bitmap = leftImage;
@@ -54,6 +55,7 @@ public class FrameGenerator{
             //System.out.println(pixelArray[i]);
             for(int j=0; j<lineList.size(); j++){
                 if(lineList.get(j).isLeftLine()) {
+                    timesRun++;
                     SelectionLine curLine = lineList.get(j);
                     pqV = new Point();
                     nV = new Point();
@@ -84,7 +86,7 @@ public class FrameGenerator{
                 }
             }
         }
-        System.out.println(outOfBoundCount+" out of "+pixelArray.length);
+        System.out.println(outOfBoundCount+" out of "+pixelArray.length+" Times run:"+timesRun);
         newFrame.setPixels(newPixelArray, 0, x, 0, 0, x, y);
         //newFrame.setPixels(pixelArray, 0, x, 0, 0, x, y);
         frames[0]=newFrame;
