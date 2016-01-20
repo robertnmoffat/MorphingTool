@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity{
 
     private MyView leftView=null, rightView=null;
 
-    private FrameGenerator frameGenerator = new FrameGenerator();
+    private FrameGenerator frameGenerator;
 
 
     @Override
@@ -76,9 +76,7 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View view) {
                 //frameGenerator.saveFrame(leftView.getBitmap());
-                frameGenerator.loadBitmap();
-                String path = frameGenerator.saveFrame(leftView.getBitmap(), getApplicationContext());
-                System.out.println("PATH:"+path);
+                //String path = frameGenerator.saveFrame(leftView.getBitmap());
                 frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), 1);
                 Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
                 //intent.putExtra("FrameGenerator", frameAmount);
@@ -114,6 +112,7 @@ public class MainActivity extends AppCompatActivity{
 
     public void onStart(){
         super.onStart();
+        frameGenerator = new FrameGenerator(getApplicationContext());
         leftView.setDrawable(true);
         leftView.setChild(rightView);
         rightView.setDrawable(false);

@@ -4,8 +4,12 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
+import android.widget.ImageView;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -15,21 +19,120 @@ import java.util.ArrayList;
  * Created by dingus on 18/01/2016.
  */
 public class FrameGenerator{
-    private int nameCount=0;
+    private static int frameCount=0;
     private Bitmap[] frames;
+    private static int[] pixelArray;
+    private static Context context;
 
-    public FrameGenerator(){}
+    private static String directoryPath;
+
+    public FrameGenerator(Context context){
+        this.context = context;
+    }
 
     public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameCount){
         frames = new Bitmap[frameCount];
-        frames[0]=leftImage;
+        //frames[0]=leftImage;
+        Point pqV,nV,xpV,pxV;
+
+        int outOfBoundCount = 0;
+
+        //Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imagenes_originales[a]);
+        Bitmap bitmap = leftImage;
+        int x = bitmap.getWidth();
+        int y = bitmap.getHeight();
+        Bitmap newFrame = Bitmap.createBitmap(x, y, Bitmap.Config.ARGB_8888);
+        pixelArray = new int[x * y];
+        int[] newPixelArray = new int[x * y];
+        bitmap.getPixels(pixelArray, 0, x, 0, 0, x, y);
+//        System.out.print("Array length: "+pixelArray.length);
+        for(int i=0; i<pixelArray.length; i++) {
+            int currPixelValue = pixelArray[i];
+            Point curPixel = new Point();
+            curPixel.set(i%x, (i/x));
+
+            //System.out.println(pixelArray[i]);
+            for(int j=0; j<lineList.size(); j++){
+                if(lineList.get(j).isLeftLine()) {
+                    SelectionLine curLine = lineList.get(j);
+                    pqV = new Point();
+                    nV = new Point();
+                    xpV = new Point();
+                    pxV = new Point();
+                    pqV.set(curLine.getX2() - curLine.getX1(), curLine.getY2() - curLine.getY1());
+                    nV.set(pqV.y * (-1), pqV.x);
+                    xpV.set(curLine.getX1() - curPixel.x, curLine.getY1() - curPixel.y);
+                    pxV.set(curPixel.x - curLine.getX1(), curPixel.y - curLine.getY1());
+                    double d = projectVector(nV, xpV);
+                    double fraction = projectVector(pqV, pxV);
+                    double fractionPercent = fraction / vectorLength(pqV);
+
+                    SelectionLine twinLine = curLine.getTwinLine();
+                    Point twinPqV = new Point();
+                    Point twinNV = new Point();
+                    twinPqV.set(twinLine.getX2()-twinLine.getX1(), twinLine.getY2()-twinLine.getY1());
+                    twinNV.set(twinPqV.y*(-1), twinPqV.x);
+
+                    double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
+                    double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
+
+                    int arrayPosition = (int)Math.round(newY*x+newX);
+                    if(arrayPosition>0&&arrayPosition<newPixelArray.length)
+                        newPixelArray[arrayPosition]=currPixelValue;
+                    else
+                        outOfBoundCount++;
+                }
+            }
+        }
+        System.out.println(outOfBoundCount+" out of "+pixelArray.length);
+        newFrame.setPixels(newPixelArray, 0, x, 0, 0, x, y);
+        //newFrame.setPixels(pixelArray, 0, x, 0, 0, x, y);
+        frames[0]=newFrame;
+        saveFrame(newFrame);
+//        for(int i=0; i<lineList.size(); i++){
+//            if(lineList.get(i).isLeftLine()){
+//
+//            }
+//        }
+    }
+
+    public double projectVector(Point first, Point second){
+        return dotProduct(first,second)/vectorLength(first);
+    }
+
+    public double vectorLength(Point vec){
+        return Math.sqrt(vec.x*vec.x+vec.y*vec.y);
+    }
+
+    public double dotProduct(Point first, Point second){
+        return first.x*second.x+first.y*second.y;
+    }
+
+    public static int[] getPixelArray(){
+        return pixelArray;
     }
 
     public void loadBitmap(){
 
     }
 
-    public String saveFrame(Bitmap frame, Context context){
+    public static Bitmap loadFrame(int frameNum){
+        String path = directoryPath;
+        Bitmap b=null;
+
+            try {
+                File f=new File(path, "frame"+frameNum+".jpg");
+                b = BitmapFactory.decodeStream(new FileInputStream(f));
+            }
+            catch (FileNotFoundException e)
+            {
+                e.printStackTrace();
+            }
+
+        return b;
+    }
+
+    public static String saveFrame(Bitmap frame){
 //        String filename = "frame"+nameCount++;
 //        FileOutputStream out = null;
 //        try {
@@ -51,7 +154,7 @@ public class FrameGenerator{
         // path to /data/data/yourapp/app_data/imageDir
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
         // Create imageDir
-        File mypath=new File(directory,"profile.jpg");
+        File mypath=new File(directory,"frame"+frameCount+".jpg");
 
         FileOutputStream fos = null;
         try {
@@ -67,12 +170,13 @@ public class FrameGenerator{
                 e.printStackTrace();
             }
         }
+        directoryPath = directory.getAbsolutePath();
         return directory.getAbsolutePath();
     }
 
 
     public int getFrameCount(){
-        return nameCount;
+        return frameCount;
     }
 
     public Bitmap getFrame(int frameNumber){

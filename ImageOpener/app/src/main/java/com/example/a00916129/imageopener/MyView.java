@@ -32,6 +32,7 @@ public class MyView extends ImageView {
     private final int TOUCH_SENSITIVITY = 30;
 
     private Bitmap mBitmap;
+    private Bitmap cleanBitmap;
     private Canvas mCanvas;
     private Path mPath;
     private Paint mBitmapPaint;
@@ -94,14 +95,14 @@ public class MyView extends ImageView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        Bitmap tempBitmap = ((BitmapDrawable)getDrawable()).getBitmap();
-        tempBitmap = Bitmap.createScaledBitmap(tempBitmap, getWidth(), getHeight(), false);
-        mBitmap  = tempBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        cleanBitmap = ((BitmapDrawable)getDrawable()).getBitmap();
+        cleanBitmap = Bitmap.createScaledBitmap(cleanBitmap, getWidth(), getHeight(), false);
+        mBitmap  = cleanBitmap.copy(Bitmap.Config.ARGB_8888, true);
         mCanvas = new Canvas(mBitmap);
     }
 
     public Bitmap getBitmap(){
-        return mBitmap;
+        return cleanBitmap;
     }
 
     @Override

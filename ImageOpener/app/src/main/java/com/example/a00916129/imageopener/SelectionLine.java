@@ -91,4 +91,6 @@ public class SelectionLine {
     public void setLeftLine(boolean leftLine) {
         this.leftLine = leftLine;
     }
+
+
 }
