@@ -99,6 +99,7 @@ public class MyView extends ImageView {
         cleanBitmap = Bitmap.createScaledBitmap(cleanBitmap, getWidth(), getHeight(), false);
         mBitmap  = cleanBitmap.copy(Bitmap.Config.ARGB_8888, true);
         mCanvas = new Canvas(mBitmap);
+        System.out.println("SIZE CHANGED "+getWidth()+" "+cleanBitmap.getWidth()+" "+getHeight()+" "+cleanBitmap.getHeight());
     }
 
     public Bitmap getBitmap(){

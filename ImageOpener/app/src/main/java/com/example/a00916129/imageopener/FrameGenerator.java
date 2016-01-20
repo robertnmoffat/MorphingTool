@@ -38,7 +38,7 @@ public class FrameGenerator{
         int outOfBoundCount = 0;
         int timesRun=0;
 
-        //Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imagenes_originales[a]);
+
         Bitmap bitmap = leftImage;
         int x = bitmap.getWidth();
         int y = bitmap.getHeight();
@@ -54,9 +54,12 @@ public class FrameGenerator{
 
             //System.out.println(pixelArray[i]);
             for(int j=0; j<lineList.size(); j++){
-                if(lineList.get(j).isLeftLine()) {
+                if(!lineList.get(j).isLeftLine()) {
                     timesRun++;
+                    //Grab current line
                     SelectionLine curLine = lineList.get(j);
+
+                    //set vectors
                     pqV = new Point();
                     nV = new Point();
                     xpV = new Point();
@@ -65,24 +68,39 @@ public class FrameGenerator{
                     nV.set(pqV.y * (-1), pqV.x);
                     xpV.set(curLine.getX1() - curPixel.x, curLine.getY1() - curPixel.y);
                     pxV.set(curPixel.x - curLine.getX1(), curPixel.y - curLine.getY1());
+
+                    //get projections
                     double d = projectVector(nV, xpV);
+                    //double d = projectVector(xpV, nV);
                     double fraction = projectVector(pqV, pxV);
                     double fractionPercent = fraction / vectorLength(pqV);
 
+                    //Grab corresponding line
                     SelectionLine twinLine = curLine.getTwinLine();
+
+                    //Set twin lines variables
                     Point twinPqV = new Point();
                     Point twinNV = new Point();
                     twinPqV.set(twinLine.getX2()-twinLine.getX1(), twinLine.getY2()-twinLine.getY1());
                     twinNV.set(twinPqV.y*(-1), twinPqV.x);
 
+                    //Find point
                     double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
                     double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
 
+                    if(i<10){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newX+","+newY);}
+
+                    //Round to nearest pixel point
                     int arrayPosition = (int)Math.round(newY*x+newX);
-                    if(arrayPosition>0&&arrayPosition<newPixelArray.length)
-                        newPixelArray[arrayPosition]=currPixelValue;
-                    else
+                    //if in bounds
+                    if(arrayPosition>0&&arrayPosition<newPixelArray.length) {
+                        //newPixelArray[arrayPosition]=currPixelValue;
+                        currPixelValue = pixelArray[arrayPosition];
+                        newPixelArray[i] = currPixelValue;
+
+                    }else {
                         outOfBoundCount++;
+                    }
                 }
             }
         }

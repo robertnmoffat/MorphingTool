@@ -177,6 +177,8 @@ public class MainActivity extends AppCompatActivity{
             ImageView imageView = (ImageView) findViewById(R.id.imageView1);
             leftBitmap = BitmapFactory.decodeFile(leftImagePath);
             imageView.setImageBitmap(leftBitmap);
+            imageView.getLayoutParams().width = imageView.getLayoutParams().width;
+            imageView.getLayoutParams().height = imageView.getLayoutParams().height;
         }
 
         if (requestCode == RESULT_LOAD_RIGHT_IMAGE && resultCode == RESULT_OK && null != data) {
