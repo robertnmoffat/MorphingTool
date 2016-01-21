@@ -237,6 +237,8 @@ public class MyView extends ImageView {
 
             currentLine.setX2((int) mX);
             currentLine.setY2((int) mY);
+//            currentLine.setX2((int) 414);
+//            currentLine.setY2((int) 144);
 
             SelectionLine tempLine = new SelectionLine(currentLine);
             tempLine.setLeftLine(false);

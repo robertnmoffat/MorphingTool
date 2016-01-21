@@ -48,9 +48,11 @@ public class FrameGenerator{
         bitmap.getPixels(pixelArray, 0, x, 0, 0, x, y);
 //        System.out.print("Array length: "+pixelArray.length);
         for(int i=0; i<pixelArray.length; i++) {
+            //for(int i=0; i<100; i++) {
             int currPixelValue = pixelArray[i];
             Point curPixel = new Point();
             curPixel.set(i%x, (i/x));
+            //curPixel.set((int)(x*0.75), (int)(y*0.5));
 
             //System.out.println(pixelArray[i]);
             for(int j=0; j<lineList.size(); j++){
@@ -72,6 +74,8 @@ public class FrameGenerator{
                     //get projections
                     double d = projectVector(nV, xpV);
                     //double d = projectVector(xpV, nV);
+//                    double fraction = projectVector(pqV, pxV);
+//                    double fractionPercent = fraction / vectorLength(pqV);
                     double fraction = projectVector(pqV, pxV);
                     double fractionPercent = fraction / vectorLength(pqV);
 
@@ -85,15 +89,25 @@ public class FrameGenerator{
                     twinNV.set(twinPqV.y*(-1), twinPqV.x);
 
                     //Find point
-                    double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
-                    double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
+                    int startX=twinLine.getX1();
+                    int startY=twinLine.getY1();
+                    double moveUpX = fractionPercent*twinPqV.x;
+                    double moveUpY = fractionPercent*twinPqV.y;
+                    double directionX = twinNV.x/vectorLength(twinNV);
+                    double directionY = twinNV.y/vectorLength(twinNV);
+                    double moveOutX = -1*d*directionX;
+                    double moveOutY = -1*d*directionY;
+                    double newX = startX+moveUpX+moveOutX;
+                    double newY = startY+moveUpY+moveOutY;
+                    //double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
+                    //double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
 
-                    if(i<10){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newX+","+newY);}
+                    if(i<1000){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newX+","+newY);}
 
                     //Round to nearest pixel point
                     int arrayPosition = (int)Math.round(newY*x+newX);
                     //if in bounds
-                    if(arrayPosition>0&&arrayPosition<newPixelArray.length) {
+                    if(arrayPosition>=0&&arrayPosition<newPixelArray.length) {
                         //newPixelArray[arrayPosition]=currPixelValue;
                         currPixelValue = pixelArray[arrayPosition];
                         newPixelArray[i] = currPixelValue;
@@ -175,12 +189,15 @@ public class FrameGenerator{
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
         // Create imageDir
         File mypath=new File(directory,"frame"+frameCount+".jpg");
+        //File path2 = new File("/storage/emulated/0/Pictures/", "frame"+frameCount+".jpg");
 
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(mypath);
             // Use the compress method on the BitMap object to write image to the OutputStream
             frame.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            //fos = new FileOutputStream(path2);
+            //frame.compress(Bitmap.CompressFormat.PNG, 100, fos);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -190,6 +207,7 @@ public class FrameGenerator{
                 e.printStackTrace();
             }
         }
+
         directoryPath = directory.getAbsolutePath();
         return directory.getAbsolutePath();
     }
