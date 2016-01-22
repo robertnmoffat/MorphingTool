@@ -33,11 +33,13 @@ public class FrameGenerator{
     public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameCount){
         frames = new Bitmap[frameCount];
         //frames[0]=leftImage;
-        Point pqV,nV,xpV,pxV;
 
         int outOfBoundCount = 0;
         int timesRun=0;
 
+        double weightSum=0.0;
+        double xDeltaSum=0.0;
+        double yDeltaSum=0.0;
 
         Bitmap bitmap = leftImage;
         int x = bitmap.getWidth();
@@ -46,7 +48,7 @@ public class FrameGenerator{
         pixelArray = new int[x * y];
         int[] newPixelArray = new int[x * y];
         bitmap.getPixels(pixelArray, 0, x, 0, 0, x, y);
-//        System.out.print("Array length: "+pixelArray.length);
+
         for(int i=0; i<pixelArray.length; i++) {
             //for(int i=0; i<100; i++) {
             int currPixelValue = pixelArray[i];
@@ -61,51 +63,21 @@ public class FrameGenerator{
                     //Grab current line
                     SelectionLine curLine = lineList.get(j);
 
-                    //set vectors
-                    pqV = new Point();
-                    nV = new Point();
-                    xpV = new Point();
-                    pxV = new Point();
-                    pqV.set(curLine.getX2() - curLine.getX1(), curLine.getY2() - curLine.getY1());
-                    nV.set(pqV.y * (-1), pqV.x);
-                    xpV.set(curLine.getX1() - curPixel.x, curLine.getY1() - curPixel.y);
-                    pxV.set(curPixel.x - curLine.getX1(), curPixel.y - curLine.getY1());
-
-                    //get projections
-                    double d = projectVector(nV, xpV);
-                    //double d = projectVector(xpV, nV);
-//                    double fraction = projectVector(pqV, pxV);
-//                    double fractionPercent = fraction / vectorLength(pqV);
-                    double fraction = projectVector(pqV, pxV);
-                    double fractionPercent = fraction / vectorLength(pqV);
+                    //Translate the initial point from the first line to the second line
+                    Point newPoint = translatePoint(curLine, curPixel);
 
                     //Grab corresponding line
                     SelectionLine twinLine = curLine.getTwinLine();
 
-                    //Set twin lines variables
-                    Point twinPqV = new Point();
-                    Point twinNV = new Point();
-                    twinPqV.set(twinLine.getX2()-twinLine.getX1(), twinLine.getY2()-twinLine.getY1());
-                    twinNV.set(twinPqV.y*(-1), twinPqV.x);
+                    double weight = calculateWeight(curLine, curPixel);
+                    xDeltaSum+= (newPoint.x-curPixel.x)*weight;
+                    yDeltaSum+= (newPoint.y-curPixel.y)*weight;
+                    weightSum+= weight;
 
-                    //Find point
-                    int startX=twinLine.getX1();
-                    int startY=twinLine.getY1();
-                    double moveUpX = fractionPercent*twinPqV.x;
-                    double moveUpY = fractionPercent*twinPqV.y;
-                    double directionX = twinNV.x/vectorLength(twinNV);
-                    double directionY = twinNV.y/vectorLength(twinNV);
-                    double moveOutX = -1*d*directionX;
-                    double moveOutY = -1*d*directionY;
-                    double newX = startX+moveUpX+moveOutX;
-                    double newY = startY+moveUpY+moveOutY;
-                    //double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
-                    //double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
-
-                    if(i<1000){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newX+","+newY);}
+                    //if(i<1000){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newPoint.x+","+newPoint.y);}
 
                     //Round to nearest pixel point
-                    int arrayPosition = (int)Math.round(newY*x+newX);
+                    int arrayPosition = (int)Math.round(newPoint.y*x+newPoint.x);
                     //if in bounds
                     if(arrayPosition>=0&&arrayPosition<newPixelArray.length) {
                         //newPixelArray[arrayPosition]=currPixelValue;
@@ -117,7 +89,25 @@ public class FrameGenerator{
                     }
                 }
             }
+
+            double finalX = curPixel.x+(xDeltaSum/weightSum);
+            double finalY = curPixel.y+(yDeltaSum/weightSum);
+
+//            //Round to nearest pixel point
+//            int arrayPosition = (int)Math.round(finalY*x+finalX);
+//            //if in bounds
+//            if(arrayPosition>=0&&arrayPosition<newPixelArray.length) {
+//                //newPixelArray[arrayPosition]=currPixelValue;
+//                currPixelValue = pixelArray[arrayPosition];
+//                newPixelArray[i] = currPixelValue;
+//
+//            }else {
+//                outOfBoundCount++;
+//            }
         }
+
+
+
         System.out.println(outOfBoundCount+" out of "+pixelArray.length+" Times run:"+timesRun);
         newFrame.setPixels(newPixelArray, 0, x, 0, 0, x, y);
         //newFrame.setPixels(pixelArray, 0, x, 0, 0, x, y);
@@ -128,6 +118,78 @@ public class FrameGenerator{
 //
 //            }
 //        }
+    }
+
+    public Point translatePoint(SelectionLine curLine, Point curPixel){
+        Point pqV,nV,xpV,pxV;
+
+        //set vectors
+        pqV = new Point();
+        pxV = new Point();
+        pqV.set(curLine.getX2() - curLine.getX1(), curLine.getY2() - curLine.getY1());
+        pxV.set(curPixel.x - curLine.getX1(), curPixel.y - curLine.getY1());
+
+        //get projections
+        double d = getPerpendicularDistance(curLine,curPixel);
+        //double d = projectVector(xpV, nV);
+//                    double fraction = projectVector(pqV, pxV);
+//                    double fractionPercent = fraction / vectorLength(pqV);
+        double fraction = projectVector(pqV, pxV);
+        double fractionPercent = fraction / vectorLength(pqV);
+
+        //Grab corresponding line
+        SelectionLine twinLine = curLine.getTwinLine();
+
+        //Set twin lines variables
+        Point twinPqV = new Point();
+        Point twinNV = new Point();
+        twinPqV.set(twinLine.getX2()-twinLine.getX1(), twinLine.getY2()-twinLine.getY1());
+        twinNV.set(twinPqV.y*(-1), twinPqV.x);
+
+        //Find point
+        int startX=twinLine.getX1();
+        int startY=twinLine.getY1();
+        double moveUpX = fractionPercent*twinPqV.x;
+        double moveUpY = fractionPercent*twinPqV.y;
+        double directionX = twinNV.x/vectorLength(twinNV);
+        double directionY = twinNV.y/vectorLength(twinNV);
+        double moveOutX = -1*d*directionX;
+        double moveOutY = -1*d*directionY;
+        double newX = startX+moveUpX+moveOutX;
+        double newY = startY+moveUpY+moveOutY;
+        //double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
+        //double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
+        Point newPoint = new Point();
+        newPoint.set((int)newX,(int)newY);
+        return newPoint;
+    }
+
+    public double calculateWeight(SelectionLine curLine, Point curPixel){
+        Point pqV,nV,xpV,pxV;
+
+        //weight parameters
+        int b,p;
+        p=0;
+        b=1;
+        double a;
+        a=0.01;
+
+
+        double d = getPerpendicularDistance(curLine, curPixel);
+        pqV = new Point(curLine.getX2() - curLine.getX1(), curLine.getY2() - curLine.getY1());
+
+        //return Math.pow((Math.pow(vectorLength(pqV), p)) / (a + d),b);
+        return (1/(0.01+Math.abs(d)));
+    }
+
+    public double getPerpendicularDistance(SelectionLine curLine, Point curPixel){
+        Point nV = new Point();
+        Point xpV = new Point();
+        Point pqV = new Point();
+        pqV.set(curLine.getX2() - curLine.getX1(), curLine.getY2() - curLine.getY1());
+        xpV.set(curLine.getX1() - curPixel.x, curLine.getY1() - curPixel.y);
+        nV.set(pqV.y * (-1), pqV.x);
+       return projectVector(nV, xpV);
     }
 
     public double projectVector(Point first, Point second){
