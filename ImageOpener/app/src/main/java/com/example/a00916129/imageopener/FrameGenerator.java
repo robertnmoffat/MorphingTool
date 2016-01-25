@@ -5,25 +5,23 @@ import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.text.Selection;
-import android.widget.ImageView;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
  * Created by dingus on 18/01/2016.
  */
 public class FrameGenerator{
-    private static int frameCount=0;
+    private int frameCount;
     private Bitmap[] frames;
-    private static int[] pixelArray;
-    private static Context context;
+    private int[] pixelArray;
+    private Context context;
 
     private static String directoryPath;
 
@@ -31,171 +29,100 @@ public class FrameGenerator{
         this.context = context;
     }
 
-    public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameCount){
-
-        frames = new Bitmap[frameCount];
+    /**
+     *
+     * @param leftImage
+     * @param rightImage
+     * @param lineList
+     * @param frameAmount
+     */
+    public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameAmount){
+        frameCount=0;
+        frames = new Bitmap[frameAmount];
         //frames[0]=leftImage;
+        Bitmap currentFrame;
 
-        int outOfBoundCount = 0;
-        int timesRun=0;
+        currentFrame = createFrame(leftImage, lineList);
+        saveFrame(currentFrame);
+        frameCount++;
 
-        Point testPoint = new Point(10,10);
-        double totalWeight=0.0;
-        double totalDeltaX=0.0;
-        double totalDeltaY=0.0;
-        SelectionLine destLine1 = new SelectionLine(5,16,1,20,true);
-        SelectionLine sourceLine1 = new SelectionLine(1,40,5,1,true);
-        destLine1.setTwinLine(sourceLine1);
-        SelectionLine destLine2 = new SelectionLine(5,30,15,35,true);
-        SelectionLine sourceLine2 = new SelectionLine(8,1,40,40,true);
-        destLine2.setTwinLine(sourceLine2);
+    }
 
-        Point translatedPoint = translatePoint(destLine1, testPoint);
-        System.out.println("POINT:"+translatedPoint);
-
-        double currentWeight = calculateWeight(destLine1, testPoint);
-        double deltaX = (translatedPoint.x-testPoint.x)*currentWeight;
-        double deltaY = (translatedPoint.y-testPoint.y)*currentWeight;
-        totalWeight += currentWeight;
-        totalDeltaX+=deltaX;
-        totalDeltaY+=deltaY;
-
-        translatedPoint = translatePoint(destLine2, testPoint);
-        System.out.println("POINT:"+translatedPoint);
-
-        currentWeight = calculateWeight(destLine2, testPoint);
-        deltaX = (translatedPoint.x-testPoint.x)*currentWeight;
-        deltaY = (translatedPoint.y-testPoint.y)*currentWeight;
-        totalWeight += currentWeight;
-        totalDeltaX+=deltaX;
-        totalDeltaY+=deltaY;
-
-        double newX = testPoint.x+(totalDeltaX/totalWeight);
-        double newY = testPoint.y+(totalDeltaY/totalWeight);
-
-        System.out.println("X:"+newX+" Y:"+newY);
-
-
-        Bitmap bitmap = leftImage;
-        int x = bitmap.getWidth();
-        int y = bitmap.getHeight();
+    /**
+     *
+     * @return
+     */
+    public Bitmap createFrame(Bitmap sourceImage, ArrayList<SelectionLine> lineList) {
+        int timesRun=0, outOfBoundCount=0;
+        int x=sourceImage.getWidth();
+        int y=sourceImage.getHeight();
         Bitmap newFrame = Bitmap.createBitmap(x, y, Bitmap.Config.ARGB_8888);
-        System.out.println("Bitmap sizes: "+bitmap.getWidth()+" "+bitmap.getHeight()+" "+newFrame.getWidth()+" "+newFrame.getHeight());
         pixelArray = new int[x * y];
+        sourceImage.getPixels(pixelArray, 0, x, 0, 0, x, y);
         int[] newPixelArray = new int[x * y];
-        bitmap.getPixels(pixelArray, 0, x, 0, 0, x, y);
-        double largestWeight=0.0;
-        double smallestWeight=1000.0;
 
-        for(int i=0; i<pixelArray.length; i++) {
-            double weightSum=0.0;
-            double xDeltaSum=0.0;
-            double yDeltaSum=0.0;
-            //for(int i=0; i<100; i++) {
+        for (int i = 0; i < pixelArray.length; i++) {
+            double weightSum = 0.0;
+            double xDeltaSum = 0.0;
+            double yDeltaSum = 0.0;
+
             int currPixelValue = pixelArray[i];
             Point curPixel = new Point();
-            curPixel.set(i%x, (i/x));
-            //curPixel.set((int)(x*0.75), (int)(y*0.5));
+            curPixel.set(i % x, (i / x));
 
-            //System.out.println(pixelArray[i]);
-            for(int j=0; j<lineList.size(); j++){
-                if(lineList.get(j).isLeftLine()) {
+            for (int j = 0; j < lineList.size(); j++) {
+                if (!lineList.get(j).isLeftLine()) {
                     timesRun++;
                     //Grab current line
                     SelectionLine curLine = lineList.get(j);
-
                     //Translate the initial point from the first line to the second line
                     Point newPoint = translatePoint(curLine, curPixel);
-
-                    //if(!isValidPoint(newPoint, x, y))continue;
-
                     //Grab corresponding line
                     SelectionLine twinLine = curLine.getTwinLine();
 
                     double weight = calculateWeight(curLine, curPixel);
-                    //weight = weight/100;
-                    if(weight<smallestWeight)smallestWeight=weight;
-                    if(weight>largestWeight)largestWeight=weight;
-                    //if(weight>1)System.out.println(weight);
-                    //System.out.println(weight);
-                    //double weight = 1;
-                    xDeltaSum+= (newPoint.x-curPixel.x)*weight;
-                    yDeltaSum+= (newPoint.y-curPixel.y)*weight;
-                    weightSum+= weight;
-
-//                    Point newPoint = translatePoint(curLine, curPixel);
-//
-//                    //if(!isValidPoint(newPoint, x, y))continue;
-//
-//                    //Grab corresponding line
-//                    SelectionLine twinLine = curLine.getTwinLine();
-//
-//                    double weight = calculateWeight(twinLine, newPoint);
-//                    //double weight = 1;
-//                    xDeltaSum+= (curPixel.x-newPoint.x)*weight;
-//                    yDeltaSum+= (curPixel.y-newPoint.y)*weight;
-//                    weightSum+= weight;
-
-                    //if(i<1000){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+newPoint.x+","+newPoint.y);}
-
-//                    //Round to nearest pixel point
-//                    int arrayPosition = (int)Math.round(newPoint.y*x+newPoint.x);
-//                    //if in bounds
-//                    if(arrayPosition>=0&&arrayPosition<newPixelArray.length) {
-//                        //newPixelArray[arrayPosition]=currPixelValue;
-//                        currPixelValue = pixelArray[arrayPosition];
-//                        newPixelArray[i] = currPixelValue;
-//
-//                    }else {
-//                        outOfBoundCount++;
-//                    }
+                    xDeltaSum += (newPoint.x - curPixel.x) * weight;
+                    yDeltaSum += (newPoint.y - curPixel.y) * weight;
+                    weightSum += weight;
                 }
             }
 
-//            double finalX = curPixel.x+(xDeltaSum/weightSum);
-//            double finalY = curPixel.y+(yDeltaSum/weightSum);
-            double finalX = Math.round(curPixel.x+(xDeltaSum/weightSum));
-            double finalY = Math.round(curPixel.y+(yDeltaSum/weightSum));
-
-            //if(!isValidPoint(new Point((int)Math.round(finalX), (int)Math.round(finalY)),x,y))continue;
-
-            //if(i<1000){System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+finalX+","+finalY);}
-//            if(curPixel.x!=Math.round(finalX)||curPixel.y!=Math.round(finalY)){
-//                System.out.println("From:"+curPixel.x+","+curPixel.y+" to:"+finalX+","+finalY);
-//            }
+            double finalX = Math.round(curPixel.x + (xDeltaSum / weightSum));
+            double finalY = Math.round(curPixel.y + (yDeltaSum / weightSum));
 
             //Round to nearest pixel point
-            int arrayPosition = (int)Math.round(finalY*x+finalX);
+            int arrayPosition = (int) Math.round(finalY * x + finalX);
             //if in bounds
-            if(arrayPosition>=0&&arrayPosition<newPixelArray.length) {
-                //newPixelArray[arrayPosition]=currPixelValue;
+            if (arrayPosition >= 0 && arrayPosition < newPixelArray.length) {
                 currPixelValue = pixelArray[arrayPosition];
                 newPixelArray[i] = currPixelValue;
-
-
-            }else {
+            } else {
                 outOfBoundCount++;
             }
         }
-
-        System.out.println("Smallest:"+smallestWeight+" Largest:"+largestWeight);
-
-        System.out.println(outOfBoundCount+" out of "+pixelArray.length+" Times run:"+timesRun);
+        System.out.println("Out of bounds frames:" + outOfBoundCount);
         newFrame.setPixels(newPixelArray, 0, x, 0, 0, x, y);
-        //newFrame.setPixels(pixelArray, 0, x, 0, 0, x, y);
-        frames[0]=newFrame;
-        saveFrame(newFrame);
-//        for(int i=0; i<lineList.size(); i++){
-//            if(lineList.get(i).isLeftLine()){
-//
-//            }
-//        }
+        frames[frameCount]=newFrame;
+        return newFrame;
     }
 
+    /**
+     *
+     * @param point
+     * @param width
+     * @param height
+     * @return
+     */
     public boolean isValidPoint(Point point, int width, int height){
         return(point.x>=0&&point.y>=0&&point.x<width&&point.y<height);
     }
 
+    /**
+     *
+     * @param curLine
+     * @param curPixel
+     * @return
+     */
     public Point translatePoint(SelectionLine curLine, Point curPixel){
         Point pqV,nV,xpV,pxV;
 
@@ -207,9 +134,6 @@ public class FrameGenerator{
 
         //get projections
         double d = getPerpendicularDistance(curLine,curPixel);
-        //double d = projectVector(xpV, nV);
-//                    double fraction = projectVector(pqV, pxV);
-//                    double fractionPercent = fraction / vectorLength(pqV);
         double fraction = projectVector(pqV, pxV);
         double fractionPercent = fraction / vectorLength(pqV);
 
@@ -233,13 +157,17 @@ public class FrameGenerator{
         double moveOutY = -1*d*directionY;
         double newX = startX+moveUpX+moveOutX;
         double newY = startY+moveUpY+moveOutY;
-        //double newX = twinLine.getX1()+fractionPercent*twinPqV.x-d*twinNV.x/vectorLength(twinNV);
-        //double newY = twinLine.getY1()+fractionPercent*twinPqV.y-d*twinNV.y/vectorLength(twinNV);
         Point newPoint = new Point();
         newPoint.set((int)Math.round(newX),(int)Math.round(newY));
         return newPoint;
     }
 
+    /**
+     *
+     * @param curLine
+     * @param curPixel
+     * @return
+     */
     public double calculateWeight(SelectionLine curLine, Point curPixel){
         //weight parameters
         int b,p;
@@ -260,17 +188,18 @@ public class FrameGenerator{
 
         double fractionPercent = getFractionalPercent(curLine, curPixel);
 
-        //System.out.println(fractionPercent);
-
         if(fractionPercent>1)d= vectorLength(qxV);
         if(fractionPercent<0)d= vectorLength(pxV);
 
-        //if(d<1&&d>-1)System.out.println(d);
-
-        //return Math.pow((Math.pow(vectorLength(pqV), p)) / (a + d),b);
         return (1/(0.01+Math.abs(d)));
     }
 
+    /**
+     *
+     * @param curLine
+     * @param curPixel
+     * @return
+     */
     public double getFractionalPercent(SelectionLine curLine, Point curPixel){
         Point pqV,nV,xpV,pxV;
         pqV = new Point();
@@ -307,7 +236,7 @@ public class FrameGenerator{
         return first.x*second.x+first.y*second.y;
     }
 
-    public static int[] getPixelArray(){
+    public int[] getPixelArray(){
         return pixelArray;
     }
 
@@ -331,24 +260,7 @@ public class FrameGenerator{
         return b;
     }
 
-    public static String saveFrame(Bitmap frame){
-//        String filename = "frame"+nameCount++;
-//        FileOutputStream out = null;
-//        try {
-//            out = new FileOutputStream(filename);
-//            frame.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-//            // PNG is a lossless format, the compression factor (100) is ignored
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            try {
-//                if (out != null) {
-//                    out.close();
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
+    public String saveFrame(Bitmap frame){
         ContextWrapper cw = new ContextWrapper(context);
         // path to /data/data/yourapp/app_data/imageDir
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
@@ -361,8 +273,6 @@ public class FrameGenerator{
             fos = new FileOutputStream(mypath);
             // Use the compress method on the BitMap object to write image to the OutputStream
             frame.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            //fos = new FileOutputStream(path2);
-            //frame.compress(Bitmap.CompressFormat.PNG, 100, fos);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

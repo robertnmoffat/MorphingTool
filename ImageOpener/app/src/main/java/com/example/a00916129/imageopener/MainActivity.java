@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity{
             public void onClick(View view) {
                 //frameGenerator.saveFrame(leftView.getBitmap());
                 //String path = frameGenerator.saveFrame(leftView.getBitmap());
-                frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), 1);
+                frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), frameAmount);
                 Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
                 //intent.putExtra("FrameGenerator", frameAmount);
                 startActivity(intent);
@@ -136,6 +136,9 @@ public class MainActivity extends AppCompatActivity{
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
+        if (id == R.id.action_clear) {
+            leftView.clearLines();
+        }
         if (id == R.id.action_settings) {
             Intent intent = new Intent(this, Drawer.class);
             startActivity(intent);

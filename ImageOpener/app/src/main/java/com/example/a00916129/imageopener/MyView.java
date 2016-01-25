@@ -336,4 +336,10 @@ public class MyView extends ImageView {
     public ArrayList<SelectionLine> getLines(){
         return lines;
     }
+
+    public void clearLines() {
+        lines.clear();
+        drawLines();
+        child.drawLines();
+    }
 }

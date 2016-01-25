@@ -17,6 +17,7 @@ import android.widget.ImageView;
 public class FrameViewActivity extends AppCompatActivity {
     Bitmap[] imageArray;
     String leftImagePath, rightImagePath;
+    int selectedFrame=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,15 +33,34 @@ public class FrameViewActivity extends AppCompatActivity {
 
         ImageView imageView = (ImageView) findViewById(R.id.imageView1);
         //Bitmap leftBitmap = BitmapFactory.decodeFile(leftImagePath);
-        imageView.setImageBitmap(FrameGenerator.loadFrame(0));
+        imageView.setImageBitmap(FrameGenerator.loadFrame(selectedFrame));
 
         ImageButton playButton = (ImageButton) findViewById(R.id.buttonPlay);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 System.out.println("Getting array...");
-                int[] array = FrameGenerator.getPixelArray();
-                System.out.print("Array length: "+array.length);
+                ImageView imageView = (ImageView) findViewById(R.id.imageView1);
+                selectedFrame++;
+                imageView.setImageBitmap(FrameGenerator.loadFrame(selectedFrame));
+                //int[] array = FrameGenerator.getPixelArray();
+                // System.out.print("Array length: "+array.length);
+//                for(int i=0; i<array.lengt; i++) {
+//                    System.out.print(array[i]);
+//                }
+            }
+        });
+
+        ImageButton skipRightButton = (ImageButton) findViewById(R.id.buttonRight);
+        skipRightButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("Right skip");
+                ImageView imageView = (ImageView) findViewById(R.id.imageView1);
+                selectedFrame++;
+                imageView.setImageBitmap(FrameGenerator.loadFrame(selectedFrame));
+                //int[] array = FrameGenerator.getPixelArray();
+                // System.out.print("Array length: "+array.length);
 //                for(int i=0; i<array.lengt; i++) {
 //                    System.out.print(array[i]);
 //                }
