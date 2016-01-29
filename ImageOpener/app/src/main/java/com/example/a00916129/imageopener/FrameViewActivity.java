@@ -57,7 +57,23 @@ public class FrameViewActivity extends AppCompatActivity {
             public void onClick(View v) {
                 System.out.println("Right skip");
                 ImageView imageView = (ImageView) findViewById(R.id.imageView1);
-                selectedFrame++;
+                if(selectedFrame<FrameGenerator.getFrameCount())selectedFrame++;
+                imageView.setImageBitmap(FrameGenerator.loadFrame(selectedFrame));
+                //int[] array = FrameGenerator.getPixelArray();
+                // System.out.print("Array length: "+array.length);
+//                for(int i=0; i<array.lengt; i++) {
+//                    System.out.print(array[i]);
+//                }
+            }
+        });
+
+        ImageButton skipLeftButton = (ImageButton) findViewById(R.id.buttonLeft);
+        skipLeftButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("Left skip");
+                ImageView imageView = (ImageView) findViewById(R.id.imageView1);
+                if(selectedFrame>0)selectedFrame--;
                 imageView.setImageBitmap(FrameGenerator.loadFrame(selectedFrame));
                 //int[] array = FrameGenerator.getPixelArray();
                 // System.out.print("Array length: "+array.length);

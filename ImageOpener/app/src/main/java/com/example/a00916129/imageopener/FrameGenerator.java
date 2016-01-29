@@ -18,10 +18,12 @@ import java.util.ArrayList;
  * Created by dingus on 18/01/2016.
  */
 public class FrameGenerator{
-    private int frameCount;
+    private static int frameCount;
     private Bitmap[] frames;
     private int[] pixelArray;
     private Context context;
+    private final int LEFT = 0;
+    private final int RIGHT = 1;
 
     private static String directoryPath;
 
@@ -41,18 +43,27 @@ public class FrameGenerator{
         frames = new Bitmap[frameAmount];
         //frames[0]=leftImage;
         Bitmap currentFrame;
+        ArrayList<SelectionLine> lineTransitionVectors;
+        ArrayList<SelectionLine> translatedLines;
 
-        currentFrame = createFrame(leftImage, lineList);
-        saveFrame(currentFrame);
-        frameCount++;
+        long startTime = System.currentTimeMillis();
 
+        for(int i=0; i<frameAmount; i++) {
+            currentFrame = createFrame(leftImage, lineList, i, frameAmount);
+            saveFrame(currentFrame, i);
+            frameCount++;
+        }
+
+
+        double timeTaken = (System.currentTimeMillis()-startTime)/1000;
+        System.out.println("Morph finished in "+timeTaken+" seconds");
     }
 
     /**
      *
      * @return
      */
-    public Bitmap createFrame(Bitmap sourceImage, ArrayList<SelectionLine> lineList) {
+    public Bitmap createFrame(Bitmap sourceImage, ArrayList<SelectionLine> lineList, int selectedFrame, int totalFrames) {
         int timesRun=0, outOfBoundCount=0;
         int x=sourceImage.getWidth();
         int y=sourceImage.getHeight();
@@ -60,6 +71,7 @@ public class FrameGenerator{
         pixelArray = new int[x * y];
         sourceImage.getPixels(pixelArray, 0, x, 0, 0, x, y);
         int[] newPixelArray = new int[x * y];
+
 
         for (int i = 0; i < pixelArray.length; i++) {
             double weightSum = 0.0;
@@ -75,6 +87,10 @@ public class FrameGenerator{
                     timesRun++;
                     //Grab current line
                     SelectionLine curLine = lineList.get(j);
+                    //shift the current line to its position based on the current frame
+                    if(totalFrames>1) {
+                        curLine = shiftLine(curLine, selectedFrame, totalFrames - 1);
+                    }
                     //Translate the initial point from the first line to the second line
                     Point newPoint = translatePoint(curLine, curPixel);
                     //Grab corresponding line
@@ -89,6 +105,8 @@ public class FrameGenerator{
 
             double finalX = Math.round(curPixel.x + (xDeltaSum / weightSum));
             double finalY = Math.round(curPixel.y + (yDeltaSum / weightSum));
+
+            if(!isValidPoint(new Point((int)finalX, (int)finalY), x, y))continue;
 
             //Round to nearest pixel point
             int arrayPosition = (int) Math.round(finalY * x + finalX);
@@ -106,8 +124,39 @@ public class FrameGenerator{
         return newFrame;
     }
 
+
     /**
-     *
+     * Shifts a line according to its current frame
+     * @param curLine
+     * @param position
+     * @param total
+     * @return
+     */
+    SelectionLine shiftLine(SelectionLine curLine, int position, int total){
+        SelectionLine vectorDifferenceLine = new SelectionLine();
+        SelectionLine shiftedLine = new SelectionLine();
+        double moveAmount;
+
+        //create a line that is a vector representing the total change between this line to its twin
+        vectorDifferenceLine.setX1(curLine.getTwinLine().getX1()-curLine.getX1());
+        vectorDifferenceLine.setY1(curLine.getTwinLine().getY1()-curLine.getY1());
+        vectorDifferenceLine.setX2(curLine.getTwinLine().getX2()-curLine.getX2());
+        vectorDifferenceLine.setY2(curLine.getTwinLine().getY2() - curLine.getY2());
+
+        //Set the points of this line at the current frame based on the transition vector
+        shiftedLine.setX1(curLine.getX1()+vectorDifferenceLine.getX1()/total*position);
+        shiftedLine.setY1(curLine.getY1()+vectorDifferenceLine.getY1()/total*position);
+        shiftedLine.setX2(curLine.getX2()+vectorDifferenceLine.getX2()/total*position);
+        shiftedLine.setY2(curLine.getY2()+vectorDifferenceLine.getY2()/total*position);
+
+        //give it the same twin as the original
+        shiftedLine.setTwinLine(curLine.getTwinLine());
+
+        return shiftedLine;
+    }
+
+    /**
+     *Returns whether or not the passed point is within bounds of the image.
      * @param point
      * @param width
      * @param height
@@ -250,6 +299,7 @@ public class FrameGenerator{
 
             try {
                 File f=new File(path, "frame"+frameNum+".jpg");
+                System.out.println("Loading file frame"+frameNum+".jpg");
                 b = BitmapFactory.decodeStream(new FileInputStream(f));
             }
             catch (FileNotFoundException e)
@@ -260,12 +310,13 @@ public class FrameGenerator{
         return b;
     }
 
-    public String saveFrame(Bitmap frame){
+    public String saveFrame(Bitmap frame, int frameNumber){
         ContextWrapper cw = new ContextWrapper(context);
         // path to /data/data/yourapp/app_data/imageDir
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
         // Create imageDir
-        File mypath=new File(directory,"frame"+frameCount+".jpg");
+        File mypath=new File(directory,"frame"+frameNumber+".jpg");
+        System.out.println("Saving file frame"+frameNumber+".jpg");
         //File path2 = new File("/storage/emulated/0/Pictures/", "frame"+frameCount+".jpg");
 
         FileOutputStream fos = null;
@@ -288,7 +339,7 @@ public class FrameGenerator{
     }
 
 
-    public int getFrameCount(){
+    public static int getFrameCount(){
         return frameCount;
     }
 
@@ -301,4 +352,5 @@ public class FrameGenerator{
             //// TODO: 18/01/2016 decide if you need this 
         }
     }
+
 }
