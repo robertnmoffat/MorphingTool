@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
 
 import java.io.File;
@@ -24,8 +25,19 @@ public class FrameGenerator{
     private Context context;
     private final int LEFT = 0;
     private final int RIGHT = 1;
+    private double progress =0;
+    private double progressTotal;
+    private long progressPercent=0;
 
     private static String directoryPath;
+
+    public void incrementProgress(){
+        progress++;
+        long currentProgress = Math.round(progress / progressTotal * 100);
+        if(progressPercent==currentProgress)return;
+        progressPercent = currentProgress;
+        System.out.println("Loading... "+progressPercent+"%");
+    }
 
     public FrameGenerator(Context context){
         this.context = context;
@@ -39,21 +51,40 @@ public class FrameGenerator{
      * @param frameAmount
      */
     public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameAmount){
+        progressTotal =
         frameCount=0;
         frames = new Bitmap[frameAmount];
         //frames[0]=leftImage;
         Bitmap currentFrame;
+        Bitmap[] leftFrames = new Bitmap[frameAmount];
+        Bitmap[] rightFrames = new Bitmap[frameAmount];
         ArrayList<SelectionLine> lineTransitionVectors;
         ArrayList<SelectionLine> translatedLines;
+
+        progressTotal = (lineList.size() * leftImage.getHeight()*leftImage.getWidth()+lineList.size()*rightImage.getHeight()*rightImage.getWidth())*frameAmount;
 
         long startTime = System.currentTimeMillis();
 
         for(int i=0; i<frameAmount; i++) {
-            currentFrame = createFrame(leftImage, lineList, i, frameAmount);
-            saveFrame(currentFrame, i);
+            leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+            System.out.println("Left frame "+i+" generated.");
+            //System.out.println("Loading... "+Math.round((double)(i+1)/2/(double)(frameAmount+frameAmount+1)*100.0)+"%");
+            rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
             frameCount++;
+            System.out.println("Right frame "+i+" generated.");
+            //System.out.println("Loading... "+(double)((double)(i+1)/2/(double)(frameAmount+frameAmount+1)*100.0)+"%");
         }
 
+        int leftPosition = frameAmount-1;
+        saveFrame(leftImage, 0);
+        frameCount++;
+        for(int i=0; i<frameAmount; i++){
+            saveFrame(crossDisolve(leftFrames[leftPosition], rightFrames[i], leftPosition, i+1, frameAmount), i+1);
+            leftPosition--;
+            System.out.println("Frame "+i+" cross dissolved.");
+        }
+        saveFrame(rightImage, frameAmount+1);
+        frameCount++;
 
         double timeTaken = (System.currentTimeMillis()-startTime)/1000;
         System.out.println("Morph finished in "+timeTaken+" seconds");
@@ -63,7 +94,7 @@ public class FrameGenerator{
      *
      * @return
      */
-    public Bitmap createFrame(Bitmap sourceImage, ArrayList<SelectionLine> lineList, int selectedFrame, int totalFrames) {
+    public Bitmap createFrame(Bitmap sourceImage, ArrayList<SelectionLine> lineList, int selectedFrame, int totalFrames, boolean leftSide) {
         int timesRun=0, outOfBoundCount=0;
         int x=sourceImage.getWidth();
         int y=sourceImage.getHeight();
@@ -82,8 +113,13 @@ public class FrameGenerator{
             Point curPixel = new Point();
             curPixel.set(i % x, (i / x));
 
+
             for (int j = 0; j < lineList.size(); j++) {
-                if (!lineList.get(j).isLeftLine()) {
+                boolean leftLine = !lineList.get(j).isLeftLine();
+                if(leftSide&&leftLine)leftLine=true;
+                else if(!leftSide&&!leftLine)leftLine=true;
+                else leftLine=false;
+                if (leftLine) {
                     timesRun++;
                     //Grab current line
                     SelectionLine curLine = lineList.get(j);
@@ -101,6 +137,7 @@ public class FrameGenerator{
                     yDeltaSum += (newPoint.y - curPixel.y) * weight;
                     weightSum += weight;
                 }
+                incrementProgress();
             }
 
             double finalX = Math.round(curPixel.x + (xDeltaSum / weightSum));
@@ -120,8 +157,64 @@ public class FrameGenerator{
         }
         System.out.println("Out of bounds frames:" + outOfBoundCount);
         newFrame.setPixels(newPixelArray, 0, x, 0, 0, x, y);
-        frames[frameCount]=newFrame;
+        //frames[frameCount]=newFrame;
         return newFrame;
+    }
+
+    /**
+     * Blends two frames based on amount ratios
+     * @param first
+     * @param second
+     * @param firstAmount
+     * @param secondAmount
+     * @param totalAmount
+     * @return
+     */
+    Bitmap crossDisolve(Bitmap first, Bitmap second, int firstAmount, int secondAmount, int totalAmount){
+        int fR,fG,fB,sR,sG,sB,bR,bB,bG,fP,sP;
+
+        int x = first.getWidth();
+        int y = first.getHeight();
+        int[] firstPixelArray = new int[x * y];
+        first.getPixels(firstPixelArray, 0, x, 0, 0, x, y);
+
+        x = second.getWidth();
+        y = second.getHeight();
+        int[] secondPixelArray = new int[x * y];
+        second.getPixels(secondPixelArray, 0, x, 0, 0, x, y);
+
+        Bitmap blendedFrame = Bitmap.createBitmap(x, y, Bitmap.Config.ARGB_8888);
+        int[] blendedPixelArray = new int[x * y];
+
+        int length = x*y;
+
+        for(int i=0; i<length; i++){
+            fP = firstPixelArray[i];
+            sP = secondPixelArray[i];
+
+            fR = Color.red(fP);
+            fG = Color.green(fP);
+            fB = Color.blue(fP);
+
+            sR = Color.red(sP);
+            sG = Color.green(sP);
+            sB = Color.blue(sP);
+
+            double firstPortion = fR*firstAmount/totalAmount;
+            double secondPortion = sR*secondAmount/totalAmount;
+            bR = (int)(firstPortion+secondPortion);
+            firstPortion = fB*firstAmount/totalAmount;
+            secondPortion = sB*secondAmount/totalAmount;
+            bB = (int)(firstPortion+secondPortion);
+            firstPortion = fG*firstAmount/totalAmount;
+            secondPortion = sG*secondAmount/totalAmount;
+            bG = (int)(firstPortion+secondPortion);
+
+            blendedPixelArray[i]=android.graphics.Color.argb(255, bR, bG, bB);
+        }
+
+        blendedFrame.setPixels(blendedPixelArray, 0, x, 0, 0, x, y);
+        return blendedFrame;
     }
 
 
@@ -138,13 +231,13 @@ public class FrameGenerator{
         double moveAmount;
 
         //create a line that is a vector representing the total change between this line to its twin
-        vectorDifferenceLine.setX1(curLine.getTwinLine().getX1()-curLine.getX1());
+        vectorDifferenceLine.setX1(curLine.getTwinLine().getX1() - curLine.getX1());
         vectorDifferenceLine.setY1(curLine.getTwinLine().getY1()-curLine.getY1());
         vectorDifferenceLine.setX2(curLine.getTwinLine().getX2()-curLine.getX2());
         vectorDifferenceLine.setY2(curLine.getTwinLine().getY2() - curLine.getY2());
 
         //Set the points of this line at the current frame based on the transition vector
-        shiftedLine.setX1(curLine.getX1()+vectorDifferenceLine.getX1()/total*position);
+        shiftedLine.setX1(curLine.getX1() + vectorDifferenceLine.getX1()/total*position);
         shiftedLine.setY1(curLine.getY1()+vectorDifferenceLine.getY1()/total*position);
         shiftedLine.setX2(curLine.getX2()+vectorDifferenceLine.getX2()/total*position);
         shiftedLine.setY2(curLine.getY2()+vectorDifferenceLine.getY2()/total*position);

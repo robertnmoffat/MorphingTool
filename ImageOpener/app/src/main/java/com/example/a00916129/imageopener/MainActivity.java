@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity{
     private static int RESULT_LOAD_LEFT_IMAGE = 1;
     private static int RESULT_LOAD_RIGHT_IMAGE = 2;
     private static String leftImagePath, rightImagePath;
-    private static int frameAmount=1;
+    private static int frameAmount=2;
     private static SeekBar seekBar;
     private static TextView framesTextView;
     private static Bitmap leftBitmap=null, rightBitmap=null;
@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity{
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                frameAmount = progress + 1;
+                frameAmount = progress + 2;
                 framesTextView.setText("Frames:" + frameAmount);
             }
 
@@ -179,6 +179,7 @@ public class MainActivity extends AppCompatActivity{
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView1);
             leftBitmap = BitmapFactory.decodeFile(leftImagePath);
+            leftBitmap.createScaledBitmap(leftBitmap, 832, 669, false);
             imageView.setImageBitmap(leftBitmap);
             imageView.getLayoutParams().width = imageView.getLayoutParams().width;
             imageView.getLayoutParams().height = imageView.getLayoutParams().height;
@@ -199,6 +200,7 @@ public class MainActivity extends AppCompatActivity{
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView2);
             rightBitmap = BitmapFactory.decodeFile(rightImagePath);
+            rightBitmap.createScaledBitmap(rightBitmap, 832,669,false);
             imageView.setImageBitmap(rightBitmap);
         }
 

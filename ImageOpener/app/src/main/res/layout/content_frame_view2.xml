@@ -53,5 +53,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/buttonRight"
             android:src="@android:drawable/ic_media_next" />
+
     </LinearLayout>
 </RelativeLayout>

@@ -210,6 +210,17 @@ public class MyView extends ImageView {
         //}
     }
     private void touch_up() {
+//        if(draggingTail||draggingHead){
+//            int xdist = dragLine.getX2()-dragLine.getX2();
+//            int ydist = dragLine.getY2()- dragLine.getY1();
+//            if(Math.sqrt(xdist*xdist+ydist*ydist)<30){
+//                lines.remove(dragLine.getTwinLine());
+//                lines.remove(dragLine);
+//                drawLines();
+//                child.drawLines();
+//                return;
+//            }
+//        }
         if(draggingTail){
             dragLine.setX1((int) mX);
             dragLine.setY1((int) mY);
