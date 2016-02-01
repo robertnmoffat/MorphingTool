@@ -1,5 +1,6 @@
 package com.example.a00916129.imageopener;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -16,6 +17,7 @@ import android.graphics.PorterDuffXfermode;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity{
     private static Bitmap leftBitmap=null, rightBitmap=null;
     private static Bitmap[] warpFrames;
     private Drawer drawer;
+    private ProgressDialog progress;
 
     private MyView leftView=null, rightView=null;
 
@@ -75,14 +78,52 @@ public class MainActivity extends AppCompatActivity{
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                progress=new ProgressDialog(MainActivity.this);
+                progress.setMessage("Generating frames...");
+                progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                progress.setIndeterminate(false);
+                progress.setProgress(0);
+                progress.show();
+                progress.setMax(100);
+                progress.setProgress(1);
+                frameGenerator.setProgressBar(progress);
                 //frameGenerator.saveFrame(leftView.getBitmap());
                 //String path = frameGenerator.saveFrame(leftView.getBitmap());
-                frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), frameAmount);
-                Intent intent = new Intent(view.getContext(), FrameViewActivity.class);
-                //intent.putExtra("FrameGenerator", frameAmount);
-                startActivity(intent);
+
+//                final Handler handler = new Handler();
+//                final Runnable r = new Runnable() {
+//                    public void run() {
+//                        frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), frameAmount);
+//                        handler.postDelayed(this, 1000);
+//                    }
+//                };
+                //frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), frameAmount);
+
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        frameGenerator.generateFrames(leftView.getBitmap(), rightView.getBitmap(), leftView.getLines(), frameAmount);
+                        startResultActivity();
+                    }});
+
+                t.start();
+
+//                while(t.isAlive()) {
+//                    progress.incrementProgressBy(1);
+//                }
+
+//                try {
+//                    t.join();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+
+
+
             }
         });
+
+
 
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -108,6 +149,12 @@ public class MainActivity extends AppCompatActivity{
 
         //drawer = new Drawer(this);
         //setContentView(drawer);
+    }
+
+    public void startResultActivity(){
+        Intent intent = new Intent(MainActivity.this, FrameViewActivity.class);
+        //intent.putExtra("FrameGenerator", frameAmount);
+        startActivity(intent);
     }
 
     public void onStart(){
@@ -179,15 +226,17 @@ public class MainActivity extends AppCompatActivity{
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView1);
             leftBitmap = BitmapFactory.decodeFile(leftImagePath);
-            leftBitmap.createScaledBitmap(leftBitmap, 832, 669, false);
-            imageView.setImageBitmap(leftBitmap);
+            //Bitmap tinyScaled = leftBitmap.createScaledBitmap(leftBitmap, 208, 167, false);
+           // Bitmap tinyScaled = leftBitmap.createScaledBitmap(leftBitmap, 52, 41, false);
+            Bitmap scaledBitmap = leftBitmap.createScaledBitmap(leftBitmap, 832, 669, false);
+            imageView.setImageBitmap(scaledBitmap);
             imageView.getLayoutParams().width = imageView.getLayoutParams().width;
             imageView.getLayoutParams().height = imageView.getLayoutParams().height;
         }
 
         if (requestCode == RESULT_LOAD_RIGHT_IMAGE && resultCode == RESULT_OK && null != data) {
             Uri selectedImage = data.getData();
-            String[] filePathColumn = { MediaStore.Images.Media.DATA };
+            String[] filePathColumn = { MediaStore.Images.Media.DATA};
 
             Cursor cursor = getContentResolver().query(selectedImage,
                     filePathColumn, null, null, null);
@@ -200,8 +249,10 @@ public class MainActivity extends AppCompatActivity{
 
             ImageView imageView = (ImageView) findViewById(R.id.imageView2);
             rightBitmap = BitmapFactory.decodeFile(rightImagePath);
-            rightBitmap.createScaledBitmap(rightBitmap, 832,669,false);
-            imageView.setImageBitmap(rightBitmap);
+            //Bitmap tinyScaled = leftBitmap.createScaledBitmap(rightBitmap, 208, 167, false);
+            //Bitmap tinyScaled = leftBitmap.createScaledBitmap(rightBitmap, 52, 41, false);
+            Bitmap scaledBitmap = rightBitmap.createScaledBitmap(rightBitmap, 832, 669, false);
+            imageView.setImageBitmap(scaledBitmap);
         }
 
     }

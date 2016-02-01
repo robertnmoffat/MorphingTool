@@ -1,5 +1,6 @@
 package com.example.a00916129.imageopener;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
@@ -28,6 +29,10 @@ public class FrameGenerator{
     private double progress =0;
     private double progressTotal;
     private long progressPercent=0;
+    private ProgressDialog bar;
+
+    private int framesProcessed=0;
+    private int totalFrames;
 
     private static String directoryPath;
 
@@ -36,7 +41,9 @@ public class FrameGenerator{
         long currentProgress = Math.round(progress / progressTotal * 100);
         if(progressPercent==currentProgress)return;
         progressPercent = currentProgress;
-        System.out.println("Loading... "+progressPercent+"%");
+        bar.setProgress((int)progressPercent);
+
+        //System.out.println("Loading... "+progressPercent+"%");
     }
 
     public FrameGenerator(Context context){
@@ -50,14 +57,15 @@ public class FrameGenerator{
      * @param lineList
      * @param frameAmount
      */
-    public void generateFrames(Bitmap leftImage, Bitmap rightImage, ArrayList<SelectionLine> lineList, int frameAmount){
-        progressTotal =
+    public void generateFrames(final Bitmap leftImage, final Bitmap rightImage, final ArrayList<SelectionLine> lineList, final int frameAmount){
+        //progressTotal =
+        totalFrames = frameAmount;
         frameCount=0;
         frames = new Bitmap[frameAmount];
         //frames[0]=leftImage;
-        Bitmap currentFrame;
-        Bitmap[] leftFrames = new Bitmap[frameAmount];
-        Bitmap[] rightFrames = new Bitmap[frameAmount];
+        //Bitmap currentFrame;
+        final Bitmap[] leftFrames = new Bitmap[frameAmount];
+        final Bitmap[] rightFrames = new Bitmap[frameAmount];
         ArrayList<SelectionLine> lineTransitionVectors;
         ArrayList<SelectionLine> translatedLines;
 
@@ -65,15 +73,94 @@ public class FrameGenerator{
 
         long startTime = System.currentTimeMillis();
 
-        for(int i=0; i<frameAmount; i++) {
-            leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
-            System.out.println("Left frame "+i+" generated.");
-            //System.out.println("Loading... "+Math.round((double)(i+1)/2/(double)(frameAmount+frameAmount+1)*100.0)+"%");
-            rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
-            frameCount++;
-            System.out.println("Right frame "+i+" generated.");
-            //System.out.println("Loading... "+(double)((double)(i+1)/2/(double)(frameAmount+frameAmount+1)*100.0)+"%");
+        final double firstEnd = frameAmount/4;
+        final double secondEnd = frameAmount/4*2;
+        final double thirdEnd = frameAmount/4*3;
+        final double fourthEnd = frameAmount;
+
+//        for (int i = 0; i < (int) frameAmount; i++) {
+//            leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+//            System.out.println("Left frame " + i + " generated.");
+//            rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
+//            frameCount++;
+//            System.out.println("Right frame " + i + " generated.");
+//        }
+
+        Thread t1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    int i = getNextFrame();
+                    if(i==-1)return;
+                    leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+                    System.out.println("Left frame " + i + " generated.");
+                    rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
+                    frameCount++;
+                    System.out.println("Right frame " + i + " generated.");
+                }
+            }});
+
+
+        Thread t2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    int i = getNextFrame();
+                    if(i==-1)return;
+                    leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+                    System.out.println("Left frame " + i + " generated.");
+                    rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
+                    frameCount++;
+                    System.out.println("Right frame " + i + " generated.");
+                }
+            }});
+
+        Thread t3 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    int i = getNextFrame();
+                    if(i==-1)return;
+                    leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+                    System.out.println("Left frame " + i + " generated.");
+                    rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
+                    frameCount++;
+                    System.out.println("Right frame " + i + " generated.");
+                }
+            }});
+
+        Thread t4 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    int i = getNextFrame();
+                    if(i==-1)return;
+                    leftFrames[i] = createFrame(leftImage, lineList, i, frameAmount, true);
+                    System.out.println("Left frame " + i + " generated.");
+                    rightFrames[i] = createFrame(rightImage, lineList, i, frameAmount, false);
+                    frameCount++;
+                    System.out.println("Right frame " + i + " generated.");
+                }
+            }});
+
+        t1.start();
+        System.out.println("First thread started.");
+        t2.start();
+        System.out.println("Second thread started.");
+        t3.start();
+        System.out.println("Third thread started.");
+        t4.start();
+        System.out.println("Fourth thread started.");
+
+        try {
+            t1.join();
+            t2.join();
+            t3.join();
+            t4.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
 
         int leftPosition = frameAmount-1;
         saveFrame(leftImage, 0);
@@ -90,6 +177,19 @@ public class FrameGenerator{
         System.out.println("Morph finished in "+timeTaken+" seconds");
     }
 
+
+    public synchronized int getNextFrame(){
+        if(framesProcessed<totalFrames){
+            framesProcessed++;
+            return framesProcessed-1;
+        }
+        return -1;
+    }
+
+    public void setProgressBar(ProgressDialog bar){
+        this.bar = bar;
+    }
+
     /**
      *
      * @return
@@ -102,7 +202,8 @@ public class FrameGenerator{
         pixelArray = new int[x * y];
         sourceImage.getPixels(pixelArray, 0, x, 0, 0, x, y);
         int[] newPixelArray = new int[x * y];
-
+        Point curPixel = new Point();
+        Point newPoint;
 
         for (int i = 0; i < pixelArray.length; i++) {
             double weightSum = 0.0;
@@ -110,7 +211,8 @@ public class FrameGenerator{
             double yDeltaSum = 0.0;
 
             int currPixelValue = pixelArray[i];
-            Point curPixel = new Point();
+            SelectionLine curLine;
+
             curPixel.set(i % x, (i / x));
 
 
@@ -122,15 +224,15 @@ public class FrameGenerator{
                 if (leftLine) {
                     timesRun++;
                     //Grab current line
-                    SelectionLine curLine = lineList.get(j);
+                    curLine = lineList.get(j);
                     //shift the current line to its position based on the current frame
                     if(totalFrames>1) {
                         curLine = shiftLine(curLine, selectedFrame, totalFrames - 1);
                     }
                     //Translate the initial point from the first line to the second line
-                    Point newPoint = translatePoint(curLine, curPixel);
+                    newPoint = translatePoint(curLine, curPixel);
                     //Grab corresponding line
-                    SelectionLine twinLine = curLine.getTwinLine();
+                    //SelectionLine twinLine = curLine.getTwinLine();
 
                     double weight = calculateWeight(curLine, curPixel);
                     xDeltaSum += (newPoint.x - curPixel.x) * weight;

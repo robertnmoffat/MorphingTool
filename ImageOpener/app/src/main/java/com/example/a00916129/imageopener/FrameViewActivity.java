@@ -45,7 +45,7 @@ public class FrameViewActivity extends AppCompatActivity {
                 if(!playing) {
                     playing = true;
                     final Handler h = new Handler();
-                    final int delay = 1000; //milliseconds
+                    final int delay = 250; //milliseconds
 
                     h.postDelayed(new Runnable() {
                         public void run() {
